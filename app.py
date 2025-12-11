@@ -5,34 +5,51 @@ import joblib
 # Carregar modelo
 modelo = joblib.load("modelo.pkl")
 
-st.title("Predição de Obesidade - Tech Challenge FASE 4")
+st.title("Predição de Obesidade")
 st.write("Preencha os dados abaixo:")
 
 # Inputs
 
-genero = st.selectbox("Gênero", ["Masculino", "Feminino"])
-idade = st.number_input("Idade", 1, 120, 25)
-altura_m = st.number_input("Altura (m)", 1.0, 2.5, 1.70)
-peso_kg = st.number_input("Peso (kg)", 20, 300, 70)
-IMC = peso_kg / (altura_m ** 2)
+col1, col2 = st.columns(2)
 
-hist_familiar_obesidade = st.selectbox("Possue histórico familiar de obesidade?", ["Sim", "Não"])
-freq_alimentos_caloricos = st.slider("Qual a frequencia de consumo de alimentos calóricos (0-3)", 0, 3, 1)
-freq_vegetais = st.slider("Qual a frequencia de consumo de vegetais?", 0, 3, 2)
-num_refeicoes_dia = st.slider("Quantas refeicoes faz por dia? (1-4)", 1, 4, 3)
+with col1:
+    genero = st.selectbox("Gênero", ["Masculino", "Feminino"])
+    idade = st.slider("Idade", 1, 120, 25)
+    altura_m = st.slider("Altura (m)", 1.0, 2.5, 1.70)
+    peso_kg = st.slider("Peso (kg)", 20, 300, 70)
 
-lanches_entre_refeicoes = st.selectbox("Consome algum lanche entre as refeições?", ["nunca", "pouco", "sempre"])
-fumante = st.selectbox("É fumante?", ["Sim", "Não"])
+with col2:
+    hist_familiar_obesidade = st.selectbox("Possue histórico familiar de obesidade?", ["Sim", "Não"])
+    fumante = st.selectbox("É fumante?", ["Sim", "Não"])
+    monitor_calorias = st.selectbox("Costuma monitorar as calorias?", ["Sim", "Não"])
+    lanches_entre_refeicoes = st.selectbox("Consome algum lanche entre as refeições?", ["nunca", "pouco", "sempre"])
 
-consumo_agua = st.slider("Toma água com frequencia? (0-3)", 0, 3, 2)
-monitor_calorias = st.selectbox("Costuma monitorar as calorias?", ["Sim", "Não"])
-freq_exercicios_semana = st.slider("Qual a frequencia que costumar praticar exercicios? (0-3)", 0, 3, 1)
-tempo_tela_diario = st.slider("Tempo diário de tela? (0-3)", 0, 3, 1)
+st.markdown("---")
 
-consumo_alcool = st.selectbox("Cosumo de Álcool", ["nunca", "pouco", "sempre"])
-meio_transporte = st.selectbox("Qual meio de transporte costuma usar?", ["carro", "caminhar", "moto", "transporte publico"])
+col3, col4 = st.columns(2)
+
+with col3:
+    freq_alimentos_caloricos = st.slider("Qual a frequencia de consumo de alimentos calóricos (0-3)", 0, 3, 1)
+    freq_vegetais = st.slider("Qual a frequencia de consumo de vegetais?", 0, 3, 2)
+    num_refeicoes_dia = st.slider("Quantas refeicoes faz por dia? (1-4)", 1, 4, 3)
+
+with col4:
+    consumo_agua = st.slider("Toma água com frequencia? (0-3)", 0, 3, 2)
+    freq_exercicios_semana = st.slider("Qual a frequencia que costumar praticar exercicios? (0-3)", 0, 3, 1)
+    tempo_tela_diario = st.slider("Tempo diário de tela? (0-3)", 0, 3, 1)
+
+st.markdown("---")
+
+col5, col6 = st.columns(2)
+
+with col5:
+    consumo_alcool = st.selectbox("Cosumo de Álcool", ["nunca", "pouco", "sempre"])
+with col6:
+    meio_transporte = st.selectbox("Qual meio de transporte costuma usar?", ["carro", "caminhar", "moto", "transporte publico"])
 
 # Pré-processamento como o modelo espera
+
+IMC = peso_kg / (altura_m ** 2)
 
 df = pd.DataFrame([{
     "genero": 1 if genero == "Masculino" else 0,
@@ -54,12 +71,29 @@ df = pd.DataFrame([{
     "meio_transporte": meio_transporte
 }])
 
-if st.button("PREVER RESULTADO"):
+st.markdown("---")
 
+if "classe_prevista" not in st.session_state:
+    st.session_state["classe_prevista"] = None
+
+if st.button("PREVER RESULTADO"):
     if IMC >= 40:
         pred = "Obesidade tipo 3"
     else:
         pred = modelo.predict(df)[0]
 
-    st.success(f"## Resultado previsto: **{pred}**")
+    st.session_state["perfil_usuario"] = df
+    st.session_state["IMC_usuario"] = IMC
+    st.session_state["classe_prevista"] = pred
+
+    st.success(f"## Resultado previsto: **{pred.upper()}**")
     st.info(f"IMC calculado: **{IMC:.2f}**")
+else:
+    if st.session_state.get("classe_prevista") is not None:
+        st.info(f"Ultima previsão: **{st.session_state['classe_prevista']}**")
+        st.info(f"Ultimo IMC calculado: **{st.session_state.get('IMC_usuario'):.2f}**")
+
+    else:
+        st.write("Aperte **Prever** para gerar a previsao e salvar um perfil para o dashboard personalizado")
+
+st.markdown("---")
