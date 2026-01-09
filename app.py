@@ -198,9 +198,6 @@ def gerar_pdf_usuario(perfil_df, imc, classe_prevista, nome_paciente, df_base):
         styles["Rodape"]
         )
     )
-    story.append(Paragraph(
-        "PROJETO TECH CHALLENGE FASE 4", styles["Rodape"]
-    ))
 
     doc.build(story)
     buffer.seek(0)
@@ -297,37 +294,44 @@ st.markdown("---")
 if "classe_prevista" not in st.session_state:
     st.session_state["classe_prevista"] = None
 
-if st.button("PREVER RESULTADO"):
-    if IMC >= 40:
-        pred = "Obesidade tipo 3"
-    else:
-        pred = modelo.predict(df)[0]
+col7, col8 = st.columns(2)
 
-    st.session_state["perfil_usuario"] = df
-    st.session_state["IMC_usuario"] = IMC
-    st.session_state["classe_prevista"] = pred
-    st.session_state["nome_paciente"] = nome_paciente
+with col7:
+    if st.button("📋 PREVER RESULTADO"):
+        if IMC >= 40:
+            pred = "Obesidade tipo 3"
+        else:
+            pred = modelo.predict(df)[0]
 
-    st.success(f"## Resultado previsto: **{pred.upper()}**")
-    st.info(f"IMC calculado: **{IMC:.2f}**")
-else:
-    st.write("Aperte **Prever** para gerar a previsao e salvar um perfil para o dashboard personalizado")
+        st.session_state["perfil_usuario"] = df
+        st.session_state["IMC_usuario"] = IMC
+        st.session_state["classe_prevista"] = pred
+        st.session_state["nome_paciente"] = nome_paciente
 
-#BOTÂO PARA GERAR PDF
-if st.session_state.get("classe_prevista") is not None:
-    pdf_buffer = gerar_pdf_usuario(
-        st.session_state["perfil_usuario"],
-        st.session_state["IMC_usuario"],
-        st.session_state["classe_prevista"],
-        st.session_state["nome_paciente"],
-        df_base
-    )
+        if pred in ["abaixo do peso", "sobrepeso nível 1", "sobrepeso nível 2", "sobrepeso nível 3"]:
+            st.warning(f"#### **{pred.upper()}**")
+        elif pred == "peso normal":
+            st.success(f"#### **{pred.upper()}**")
+        else:
+            st.error(f"#### **{pred.upper()}**")   
+        st.info(f"#### IMC calculado: **{IMC:.2f}**")
+        
+with col8:
+    #BOTÂO PARA GERAR PDF
+    if st.session_state.get("classe_prevista") is not None:
+        pdf_buffer = gerar_pdf_usuario(
+            st.session_state["perfil_usuario"],
+            st.session_state["IMC_usuario"],
+            st.session_state["classe_prevista"],
+            st.session_state["nome_paciente"],
+            df_base
+        )
 
-    st.download_button(
-        label="📄 Baixar relatório em PDF",
-        data=pdf_buffer,
-        file_name="relatorio_obesidade.pdf",
-        mime="application/pdf"
-    )
+        st.download_button(
+            label="📄 Baixar relatório em PDF",
+            data=pdf_buffer,
+            file_name="relatorio_obesidade.pdf",
+            mime="application/pdf"
+        )
 
 st.markdown("---")

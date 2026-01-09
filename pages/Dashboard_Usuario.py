@@ -17,13 +17,8 @@ imc_user = st.session_state["IMC_usuario"]
 classe_prevista = st.session_state["classe_prevista"]
 nome_cliente = st.session_state["nome_paciente"]
 
-col1, col2 = st.columns([2, 4]) 
-
-with col1:
-    st.markdown(f"### 👤 {nome_cliente.upper()}")
-''
-with col2:
-    st.markdown(f"### 🔶 **Classe Prevista:** {classe_prevista.upper()}")
+st.markdown(f"#### 👤 {nome_cliente.upper()}")
+st.markdown(f"#### 🔶 **Classe Prevista:** {classe_prevista.upper()}")
 
 st.markdown("---")
 
