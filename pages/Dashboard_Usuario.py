@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 
-st.title("Dashboard Personalizado - Perfil do Usuário")
+st.title("Perfil do Usuário", text_alignment="center")
 
 if "perfil_usuario" not in st.session_state:
     st.warning("Faça uma previsão na página principal para ver seu dashboard personalizado")
@@ -15,8 +15,18 @@ df = pd.read_csv("obesity_modelado.csv")
 user = st.session_state["perfil_usuario"].iloc[0]
 imc_user = st.session_state["IMC_usuario"]
 classe_prevista = st.session_state["classe_prevista"]
+nome_cliente = st.session_state["nome_paciente"]
 
-st.success(f"Classe Prevista: **{classe_prevista.upper()}**")
+col1, col2 = st.columns([2, 4]) 
+
+with col1:
+    st.markdown(f"### 👤 {nome_cliente.upper()}")
+''
+with col2:
+    st.markdown(f"### 🔶 **Classe Prevista:** {classe_prevista.upper()}")
+
+st.markdown("---")
+
 st.metric("Seu IMC", f"{imc_user:.2f}")
 
 st.markdown("---")
@@ -31,7 +41,7 @@ col2.metric(
 
 st.markdown("---")
 
-st.subheader("Onde voce se encontra na distribuição geral de IMC")
+st.subheader("Onde voce se encontra na distribuição geral de IMC", text_alignment="center")
 
 fig_hist = px.histogram(df, x="IMC", nbins=40, title="Distribuição Geral de IMC")
 fig_hist.add_vline(x=imc_user, line_width=3, line_color="red")
@@ -39,7 +49,7 @@ st.plotly_chart(fig_hist, use_container_width=True)
 
 st.markdown("---")
 
-st.subheader("Seu perfil de hábitos vs Média da População")
+st.subheader("Seu perfil de hábitos vs Média da População", text_alignment="center")
 
 habitos = [
     "freq_vegetais",
@@ -49,6 +59,16 @@ habitos = [
     "consumo_agua"
 ]
 
+habitos_labels = {
+    "freq_vegetais": "Consumo de Vegetais",
+    "freq_alimentos_caloricos": "Alimentos Calóricos",
+    "freq_exercicios_semana": "Exercícios por Semana",
+    "tempo_tela_diario": "Tempo de Tela (h/dia)",
+    "consumo_agua": "Consumo de Água (L)"
+}
+
+labels_exibicao = [habitos_labels[h] for h in habitos]
+
 valores_user = [user[h] for h in habitos]
 valores_media = [df[h].mean() for h in habitos]
 
@@ -56,7 +76,7 @@ fig_radar = go.Figure()
 
 fig_radar.add_trace(go.Scatterpolar(
     r=valores_user,
-    theta=habitos,
+    theta=labels_exibicao,
     fill='toself',
     name='Voce'
 ))
@@ -71,7 +91,7 @@ st.plotly_chart(fig_radar, use_container_width=True)
 
 st.markdown("---")
 
-st.subheader("Como voce se compara com pessoas da mesma classe?")
+st.subheader("Como voce se compara com pessoas da mesma classe?", text_alignment="center")
 
 classe_df = df[df["nivel_obesidade"] == classe_prevista]
 
