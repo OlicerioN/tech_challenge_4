@@ -230,6 +230,23 @@ with col2:
 
 st.markdown("---")
 
+legenda = pd.DataFrame({
+    "Hábito": [
+        "Consumo de água",
+        "Exercícios físicos",
+        "Consumo de vegetais",
+        "Alimentos calóricos",
+        "Tempo de tela"
+    ],
+    "0": ["Muito baixo", "Não pratica", "Quase nunca", "Quase nunca", "Muito baixo"],
+    "1": ["Baixo", "Raramente", "Raramente", "Raramente", "Baixo"],
+    "2": ["Médio", "Moderado", "Moderado", "Moderado", "Moderado"],
+    "3": ["Alto", "Frequente", "Frequente", "Frequente", "Alto"]
+})
+
+st.subheader("Legenda dos valores (0-3)")
+st.table(legenda) 
+
 col3, col4 = st.columns(2)
 
 with col3:
