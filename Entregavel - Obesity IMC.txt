@@ -1,0 +1,987 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "94a769cf-a864-4128-97e1-4ba60fc8074e",
+   "metadata": {},
+   "source": [
+    "# TECH CHALLENGE"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9174091d-93b1-423a-a232-6dc9fc2eadd4",
+   "metadata": {},
+   "source": [
+    "## OBJETIVO\n",
+    "\n",
+    "###### CARGO:\n",
+    "    - Ciêntista de dados\n",
+    "###### DESAFIO:\n",
+    "    - Desenvolver modelo de ML para prever obesidade\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "40aa9044-8946-4be5-b61e-6f2d965d5957",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import base64\n",
+    "import requests\n",
+    "import pandas as pd\n",
+    "from io import StringIO\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "from scipy.stats import f_oneway,  chi2_contingency"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e3604cc1-02f0-4ac4-9893-38008db4e358",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pd.set_option('future.no_silent_downcasting', True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6d38c601-10ff-496c-a549-4dadf2cdc447",
+   "metadata": {},
+   "source": [
+    "- Base de dados disponibilizada pela FIAP"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "55cf8bdf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "api_url = \"https://api.github.com/repos/PedroSilva0z/Data-Viz-Production-Models/contents/Base/Obesity.csv\"\n",
+    "\n",
+    "r = requests.get(api_url)\n",
+    "\n",
+    "# garante que vai estourar erro legível se falhar\n",
+    "r.raise_for_status()\n",
+    "\n",
+    "# conteúdo vem em base64\n",
+    "content = r.json()['content']\n",
+    "csv_data = base64.b64decode(content).decode('utf-8')\n",
+    "\n",
+    "# agora lemos normalmente\n",
+    "obesity = pd.read_csv(StringIO(csv_data))\n",
+    "obesity.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e7ff5e1c-2596-4d6a-b8a2-f90a153ee5c0",
+   "metadata": {},
+   "source": [
+    "# Basic Informations"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5f7cb742",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Verificando tipagem\n",
+    "\n",
+    "obesity.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a37c1686-2030-4858-8caa-891991b1d487",
+   "metadata": {},
+   "source": [
+    "# Descriptive information"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2fa4d0c2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Verificando características de colunas numéricas\n",
+    "\n",
+    "obesity.describe()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1ea04e48-7db6-49bb-9d03-b3cd526974ba",
+   "metadata": {},
+   "source": [
+    "# Empty Values"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6a2ea25f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Verificando nulos por coluna\n",
+    "\n",
+    "obesity.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "cb1cb795-1d3b-4827-b68c-e89e78f5129e",
+   "metadata": {},
+   "source": [
+    "# Duplicated values"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6964717b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Verificando linhas duplicadas\n",
+    "\n",
+    "print(\"Dup 1:\", obesity.duplicated().sum())\n",
+    "\n",
+    "# Removendo linhas duplicadas\n",
+    "\n",
+    "obesity = obesity.drop_duplicates()\n",
+    "\n",
+    "# Confirmando remoção das linhas duplicadas\n",
+    "\n",
+    "print(\"Dup 2:\", obesity.duplicated().sum())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d1922cee-9539-4f51-b87a-92930b7b4c48",
+   "metadata": {},
+   "source": [
+    "- **Gender:** Gênero.\n",
+    "- **Age:** Idade.\n",
+    "- **Height:** Altura em metros.\n",
+    "- **Weight:** Peso em kgs.\n",
+    "- **family_history:** Algum membro da família sofreu ou sofre de excesso de peso?\n",
+    "- **FAVC:** Você come alimentos altamente calóricos com frequência?\n",
+    "- **FCVC:** Você costuma comer vegetais nas suas refeições?\n",
+    "- **NCP:** Quantas refeições principais você faz diariamente?\n",
+    "- **CAEC:** Você come alguma coisa entre as refeições?\n",
+    "- **SMOKE:** Você fuma?\n",
+    "- **CH2O:** Quanta água você bebe diariamente?\n",
+    "- **SCC:** Você monitora as calorias que ingere diariamente?\n",
+    "- **FAF:** Com que frequência você pratica atividade física?\n",
+    "- **TER:** Quanto tempo você usa dispositivos tecnológicos como celular, videogame, televisão, computador e outros?\n",
+    "- **CALC:** Com que frequência você bebe álcool?\n",
+    "- **MTRANS:** Qual meio de transporte você costuma usar?\n",
+    "- **Obesity_level (coluna alvo):** Nível de obesidade"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "11150505-96b2-405a-b460-987cda457058",
+   "metadata": {},
+   "source": [
+    "# Data validation"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "764052db",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "## Arredondar colunas numéricas decimais para número inteiro, conforme indicado no dicionário disponibilizado\n",
+    "\n",
+    "# 1 - selecionando colunas numéricas\n",
+    "\n",
+    "col_Int_double = ['FCVC','NCP','CH2O','FAF','TUE']\n",
+    "\n",
+    "obesity[col_Int_double] = obesity[col_Int_double].round().astype(int)\n",
+    "\n",
+    "# 3 - verificando resultado\n",
+    "\n",
+    "obesity.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b3fe6910-8258-41bf-a12f-4a27e0a2b137",
+   "metadata": {},
+   "source": [
+    "# Data transformation"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "040c8533",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Usamos como boas práticas transformar variáveis \"Sim\" e \"Não\" em variáveis booleanas\n",
+    "\n",
+    "obesity['Gender'] = obesity['Gender'].replace({'Female': 0, 'Male': 1}).astype('int64')\n",
+    "obesity['family_history'] = obesity['family_history'].replace({'no': 0, 'yes': 1}).astype('int64')\n",
+    "obesity['FAVC'] = obesity['FAVC'].replace({'no': 0, 'yes': 1}).astype('int64')\n",
+    "obesity['SMOKE'] = obesity['SMOKE'].replace({'no': 0, 'yes': 1}).astype('int64')\n",
+    "obesity['SCC'] = obesity['SCC'].replace({'no': 0, 'yes': 1}).astype('int64')\n",
+    "\n",
+    "# Verificando resultado\n",
+    "\n",
+    "obesity.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "934f0550-1385-45f7-af98-e311d691a799",
+   "metadata": {},
+   "source": [
+    "# Translate DataFrame\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0f92a4dd-260e-4ced-9310-9272ae25285b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Traduzindo cabeçalhos para português (BR)\n",
+    "\n",
+    "obesity = obesity.rename(\n",
+    "    columns={\n",
+    "        'Gender': 'genero',\n",
+    "        'Age': 'idade',\n",
+    "        'Height': 'altura_m',\n",
+    "        'Weight': 'peso_kg',\n",
+    "        'family_history': 'hist_familiar_obesidade',\n",
+    "        'FAVC': 'freq_alimentos_caloricos',\n",
+    "        'FCVC': 'freq_vegetais',\n",
+    "        'NCP': 'num_refeicoes_dia',\n",
+    "        'CAEC': 'lanches_entre_refeicoes',\n",
+    "        'SMOKE': 'fumante',\n",
+    "        'CH2O': 'consumo_agua',\n",
+    "        'SCC': 'monitor_calorias',\n",
+    "        'FAF': 'freq_exercicios_semana',\n",
+    "        'TUE': 'tempo_tela_diario',\n",
+    "        'CALC': 'consumo_alcool',\n",
+    "        'MTRANS': 'meio_transporte',\n",
+    "        'Obesity': 'nivel_obesidade'\n",
+    "    }\n",
+    ")\n",
+    "\n",
+    "# Verificando resultado\n",
+    "\n",
+    "obesity.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "da235e66-97b9-4b11-a7f7-256032c0d3f1",
+   "metadata": {},
+   "source": [
+    "# Rename results"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "42a74a2a-4ed4-4ff9-b668-7edbe8199e13",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "obesity['lanches_entre_refeicoes'] = obesity['lanches_entre_refeicoes'].replace(\n",
+    "    {'Sometimes': 'pouco',\n",
+    "     'Frequently': 'frequente',\n",
+    "     'Always': 'sempre',\n",
+    "     'no': 'nunca'}\n",
+    ")\n",
+    "obesity['consumo_alcool'] = obesity['consumo_alcool'].replace(\n",
+    "    {'Sometimes': 'pouco',\n",
+    "     'Frequently': 'frequente',\n",
+    "     'Always': 'sempre',\n",
+    "     'no': 'nunca'}\n",
+    ")\n",
+    "obesity['meio_transporte'] = obesity['meio_transporte'].replace(\n",
+    "    {'Automobile': 'carro',\n",
+    "     'Motorbike': 'moto',\n",
+    "     'Bike': 'bicicleta', \n",
+    "     'Public_Transportation': 'transporte público',\n",
+    "     'Walking': 'caminhando'}\n",
+    ")\n",
+    "obesity['nivel_obesidade'] = obesity['nivel_obesidade'].replace(\n",
+    "    {'Normal_Weight': 'peso normal',\n",
+    "     'Overweight_Level_I': 'sobrepeso nível 1',\n",
+    "     'Overweight_Level_II': 'sobrepeso nível 2',\n",
+    "     'Obesity_Type_I': 'obesidade tipo 1', \n",
+    "     'Obesity_Type_II': 'obesidade tipo 2',\n",
+    "     'Obesity_Type_III': 'obesidade tipo 3',\n",
+    "     'Insufficient_Weight': 'abaixo do peso'}\n",
+    ")\n",
+    "\n",
+    "obesity['IMC'] = obesity.peso_kg / (obesity.altura_m ** 2)\n",
+    "\n",
+    "obesity.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1cd83468-00a7-40b5-b612-8de12d4e1bc5",
+   "metadata": {},
+   "source": [
+    "<br>\n",
+    "\n",
+    "# Resultado Esperado\n",
+    "\n",
+    "<br>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "afc8121e-a1bd-4825-b804-0fad4a08dcc3",
+   "metadata": {},
+   "source": [
+    "- Pipeline de machine learning demonstrando toda a etapa de feature engineering e treinamento do modelo\n",
+    "- Modelo com assertividade acima de 75%\n",
+    "- Realizar o deploy do seu modelo em uma aplicação preditiva utilizando o Streamlit\n",
+    "- Construir uma visão analítica em um painel com principais insights obtidos com o estudo sobre obesidade para trazer insights para a equipe médica"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "48a8b540-60b5-46e9-b6bd-d49da87c45d8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(10,3))\n",
+    "\n",
+    "obesity['idade'].plot(kind='hist', bins=20)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d3b404d5-54cf-416e-8ab5-47e15acc841e",
+   "metadata": {},
+   "source": [
+    "- Pico grande entre 18 e 25 anos → jovens dominam o conjunto de dados.\n",
+    "- A queda progressiva até 40 anos indica amostra não balanceada por faixa etária.\n",
+    "- A presença de poucos pontos acima de 50–60 anos sugere que:\n",
+    "    - São exceções\n",
+    "    - Podem impactar análises que envolvam média (ex.: calorias, exercícios)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c4045bca-258e-4723-9ebe-d0598094ad13",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "obesity[['idade','peso_kg','altura_m']].plot(kind='box', subplots=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9520f472-8776-4810-bb78-2514a1ac153c",
+   "metadata": {},
+   "source": [
+    "##### Idade\n",
+    "\n",
+    "- A distribuição é concentrada entre 18 e 30 anos → população majoritariamente jovem.\n",
+    "- Muitos outliers acima de 40–55 anos → minoria mais velha pode influenciar médias.\n",
+    "- Pode indicar que o estudo foi feito em ambiente universitário ou laboral de jovens.\n",
+    "\n",
+    "##### Peso\n",
+    "\n",
+    "- Peso mediano ~80 kg, com grande variação (40 kg até >150 kg).\n",
+    "- Outliers altos sugerem casos de obesidade severa.\n",
+    "- Pode existir relação entre baixo nível de exercícios ou mau hábito alimentar com os pesos mais altos.\n",
+    "\n",
+    "##### Altura\n",
+    "\n",
+    "- Altura concentrada entre 1.60 e 1.75 m.\n",
+    "- Poucos outliers acima de 1.90 m.\n",
+    "- A distribuição é relativamente simétrica → altura não parece ser um fator crítico nesta amostra."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3aa1aa53-b28c-42df-84cb-e69f4675d974",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print('\\n\\nFrequência dos dados de consumo de lanche: \\n')\n",
+    "print(obesity['lanches_entre_refeicoes'].value_counts())\n",
+    "\n",
+    "print('\\n\\nFrequência por nivel de obesidade: \\n')\n",
+    "print(obesity['nivel_obesidade'].value_counts())\n",
+    "\n",
+    "print('\\n\\nFrequeência por meio de transporte: \\n')\n",
+    "print(obesity['meio_transporte'].value_counts())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0ecc8226-ed12-4999-bbae-fe32c1e22ddb",
+   "metadata": {},
+   "source": [
+    "##### Consumo de lanche:\n",
+    "\n",
+    "- A maioria das pessoas consome lanches entre as refeições, mesmo que ocasionalmente (podendo aumentar a ingestão calórica diária).\n",
+    "- O grupo que **come lanches sempre (53)** pode apresentar **maior risco** de estar em níveis mais altos **de obesidade**.\n",
+    "- O número muito baixo de pessoas que não consome lanches (37) indica que o hábito de beliscar é comum na população estudada.\n",
+    "- Pode haver relação entre **“frequently/always” e obesidade tipo I, II e III**.\n",
+    "\n",
+    "##### Nivel de Obesidade:\n",
+    "\n",
+    "- O dataset tem uma alta **prevalência de obesidade**, especialmente **tipos I, II e III**.\n",
+    "- Apenas **~13% estão com baixo peso** > população tende mais a sobrepeso do que a magreza.\n",
+    "- A soma dos níveis elevados (I, II, III) indica quase 1/3 da amostra com obesidade significativa, sugerindo:\n",
+    "\n",
+    "      - baixa atividade física\n",
+    "      - consumo calórico alto\n",
+    "      - possíveis hábitos sedentários\n",
+    "\n",
+    "\n",
+    "##### Transporte:\n",
+    "\n",
+    "- Predomínio enorme do **transporte público (75%+)**, indicando que a maioria realiza pouca caminhada diária.\n",
+    "- Apenas **7 pessoas usam bicicleta** > indica baixa cultura de atividade física ligada a mobilidade.\n",
+    "    - Essa predominância pode estar **associada ao alto número de indivíduos com obesidade** e sobrepeso.\n",
+    "- A baixa **frequência de caminhada** como transporte (55 pessoas) sugere que:\n",
+    "    - o deslocamento diário não contribui significativamente para gasto calórico."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "58ca023f-7473-4626-b35c-a752795695cb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(10,3))\n",
+    "\n",
+    "obesity['nivel_obesidade'].value_counts().plot(kind='bar')\n",
+    "\n",
+    "plt.xticks(rotation=15)\n",
+    "\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5264dbb5-15c2-40dd-a9a0-7bd29998df32",
+   "metadata": {},
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d51b31f1-a105-4703-9e36-2c72673d75ec",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(10,8))\n",
+    "sns.heatmap(obesity.corr(numeric_only=True), annot=True, cmap='Blues')\n",
+    "plt.xticks(rotation=75)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "980727dd-c00a-43f4-b572-ac621cac6afa",
+   "metadata": {},
+   "source": [
+    "### Correlação acima de 0.4\n",
+    "\n",
+    "##### Altura × Gênero (0.63)\n",
+    "\n",
+    "- Provavelmente a variável gênero está codificada como 0/1, onde um dos grupos é mais alto.\n",
+    "- Hipótese: homens tendem a ser mais altos que mulheres no dataset.\n",
+    "\n",
+    "##### Altura × Peso (0.46)\n",
+    "\n",
+    "- Pessoas mais altas tendem a pesar mais.\n",
+    "- Hipótese: composição corporal acompanha o aumento de altura.\n",
+    "\n",
+    "#####  Peso × Histórico familiar de obesidade (0.49)\n",
+    "\n",
+    "- Pessoas com histórico familiar de obesidade tendem a apresentar maior peso.\n",
+    "- Hipótese: existe forte componente genético/ambiental contribuindo para maior massa corporal.\n",
+    "\n",
+    "#####  Idade × Peso (0.20)\n",
+    "\n",
+    "- Pequeno aumento de peso conforme a idade cresce.\n",
+    "- Hipótese: indivíduos mais velhos ganham mais peso, possivelmente por menor gasto energético.\n",
+    "\n",
+    "\n",
+    "### Correlação Moderada\n",
+    "\n",
+    "- Peso × Consumo diário de água (0.19)\n",
+    "- Pode indicar que pessoas com maior peso também consomem mais água — algo esperado fisiologicamente."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e2b96ac4-5405-4eda-beab-41873eb29a7b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pd.crosstab(obesity['nivel_obesidade'], obesity['consumo_alcool'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b4427e63-65b9-4ade-8f3b-1eb23800193e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(15,3))\n",
+    "sns.countplot(data=obesity, x='nivel_obesidade', hue='consumo_alcool')\n",
+    "plt.xticks(rotation=10)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5ebc1ca8-29dc-4f45-81f5-f2d7f992749d",
+   "metadata": {},
+   "source": [
+    "- Não Consumo e Consumo Ocasional Dominam: A grande maioria das observações em todos os níveis de peso reportou não consumir álcool ('no') ou consumir apenas ocasionalmente ('Sometimes').\n",
+    "\n",
+    "- Baixa Frequência nos Extremos: O consumo 'Always' (sempre) é quase inexistente (apenas 2 casos). O consumo 'Frequently' (frequentemente) é baixo em geral e muito raro nos níveis de obesidade mais severos ('Obesity_Type_II' e 'III', com 2 e 0 casos, respectivamente).\n",
+    "\n",
+    "- Maior Consumo Ocasional: O nível 'Obesity_Type_III' se destaca com o maior número de pessoas que consomem álcool 'Sometimes' (323), embora quase ninguém desse grupo beba frequentemente ou diga que \"não bebe\" (apenas 1 em 'no').\n",
+    "\n",
+    "- Associação Fraca com Obesidade Severa: Não há evidência de uma associação crescente entre o aumento da severidade da obesidade e o consumo frequente de álcool."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "87b4f867-7100-4dbe-80cf-b4fd9b23305f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(15,3))\n",
+    "sns.scatterplot(data=obesity, x='idade', y='peso_kg', hue='nivel_obesidade')\n",
+    "plt.xticks(rotation=10)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "23420d76-f3be-4fc0-acf6-f2aa3e4d48ca",
+   "metadata": {},
+   "source": [
+    "- Peso Define os Grupos: Os níveis de obesidade são claramente segregados pelo peso (eixo Y). 'Insufficient_Weight' e 'Normal_Weight' estão na base, e 'Obesity_Type_II' e 'III' estão no topo (acima de 100 kg).\n",
+    "\n",
+    "- Amostra Jovem: A maioria dos participantes tem entre 20 e 35 anos.\n",
+    "\n",
+    "- Idade Não é Fator Determinante: Não há uma correlação clara (tendência de aumento ou diminuição) entre idade e peso na amostra. Os pesos mais altos ('Obesity_Type_III') estão concentrados principalmente na faixa jovem (20-30 anos)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0c16531c-3bbe-48da-be4c-24203857a747",
+   "metadata": {},
+   "source": [
+    "<br><br>\n",
+    "\n",
+    "# Analysis of Variance\n",
+    "\n",
+    "- Are the mean weights different across obesity levels?\n",
+    "  \n",
+    "<br><br>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "42f6255b-3358-4f1f-922c-c316d5b3fcc9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# separating weight by obesity group\n",
+    "grupos = [\n",
+    "    group['peso_kg'].values\n",
+    "    for name, group in obesity.groupby('nivel_obesidade')\n",
+    "]\n",
+    "\n",
+    "# ANOVA test\n",
+    "anova_res = f_oneway(*grupos)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "eb571574-24d2-4596-af3c-c826cba59646",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(f'FStatistic: {anova_res[0]} \\npvalue: {anova_res[1]}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c0845385-d589-4b64-8354-da943fc88daa",
+   "metadata": {},
+   "source": [
+    "**EN**\n",
+    "\n",
+    "- The ANOVA:\n",
+    "    - F-statistic is extremely high (1926.52),\n",
+    "    - p-value is effectively zero\n",
+    "- indicating that average weight differs significantly across obesity levels.\n",
+    "\n",
+    "\n",
+    "**PT-BR**\n",
+    "\n",
+    "- do ANOVA\n",
+    "    - estatística F é extremamente alta (1926,52)\n",
+    "    - p-valor é praticamente zero,\n",
+    "- indicando que o peso médio difere significativamente entre os níveis de obesidade."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d51aff4a-b415-428b-a506-516d2b4a6af4",
+   "metadata": {},
+   "source": [
+    "<br><br>\n",
+    "\n",
+    "# Chi-square independence\n",
+    "\n",
+    "- Is there a relationship between two categorical variables?\n",
+    "    - Is alcohol consumption associated with obesity level?\n",
+    "    - Does the distribution of obesity levels change according to alcohol consumption frequency?\n",
+    "\n",
+    "<br><br>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a6949459-a1fd-4855-ae3f-e129d6580a36",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# tabela cruzada\n",
+    "tabela = pd.crosstab(obesity['nivel_obesidade'], obesity['consumo_alcool'])\n",
+    "\n",
+    "# teste Qui-quadrado\n",
+    "chi2, p, df, expected = chi2_contingency(tabela)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d9c74253-c142-47ca-9726-dcd6dcce887f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(f'CHI^2: {chi2} \\nP Value: {p}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "18f66cd5-5611-4a9f-9fa4-da777ee68f5c",
+   "metadata": {},
+   "source": [
+    "**EN**\n",
+    "\n",
+    "- The chi-square\n",
+    "    - statistic (335.56)\n",
+    "    - with an extremely small p-value\n",
+    "- shows a strong association between alcohol consumption and obesity category.\n",
+    "\n",
+    "**PT-BR**\n",
+    "\n",
+    "- qui-quadrado\n",
+    "    - A estatística (335,56)\n",
+    "    - Com um p-valor extremamente pequeno\n",
+    "- Mostra uma forte associação entre consumo de álcool e categoria de obesidade."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ad8bdaf3-bed2-4a2f-87b6-2c3434ec68c4",
+   "metadata": {},
+   "source": [
+    "<br><br>\n",
+    "\n",
+    "# IMPORT LIBS OF MACHINE LEARNING\n",
+    "\n",
+    "Teste 1\n",
+    "\n",
+    "<br><br>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "54c7709b-1435-4499-a0f5-5c628f4da581",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.preprocessing import OneHotEncoder\n",
+    "from sklearn.compose import ColumnTransformer\n",
+    "from sklearn.tree import DecisionTreeClassifier\n",
+    "from sklearn.pipeline import Pipeline\n",
+    "from sklearn.metrics import accuracy_score, confusion_matrix, classification_report\n",
+    "from sklearn.model_selection import GridSearchCV\n",
+    "from sklearn import tree as sktree"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "92e086b7-2d4b-443d-8d4c-0ae341bf0e5f",
+   "metadata": {},
+   "source": [
+    "## Feature Engineering"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f16acb9b-fbc9-478f-bddf-f325b925a0ba",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "display(obesity.head(), obesity.info())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e5f1e683-68ae-448b-9713-71b6345f65c3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# X = todas as variáveis exceto o target\n",
+    "X = obesity.drop(columns=['nivel_obesidade'])\n",
+    "\n",
+    "# y = variável alvo\n",
+    "y = obesity['nivel_obesidade']\n",
+    "\n",
+    "categoricas = X.select_dtypes(include=[\"object\"]).columns\n",
+    "numericas = X.select_dtypes(include=[\"int64\",\"float64\"]).columns\n",
+    "    \n",
+    "preprocessador = ColumnTransformer(\n",
+    "    transformers=[\n",
+    "        (\"cat\", OneHotEncoder(drop=\"first\", handle_unknown=\"ignore\"), categoricas),\n",
+    "        (\"num\", \"passthrough\", numericas)\n",
+    "    ]\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a4a79481-0b83-41d9-aaa5-84357c6e64ac",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "preprocessador"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f346a9c1-db07-4d14-bd73-cc004f4bbd90",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "modelo = Pipeline(steps=[\n",
+    "    (\"prep\", preprocessador),\n",
+    "    (\"tree\", DecisionTreeClassifier(max_depth=6, random_state=42))\n",
+    "])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4cc43bb1-2667-4171-ad99-c309edad3a0b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "modelo"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "141022d7-66f5-46e5-a799-84e6ae74851c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_train, X_test, y_train, y_test = train_test_split(\n",
+    "    X, y, test_size=0.25, random_state=42, stratify=y\n",
+    ")\n",
+    "\n",
+    "modelo.fit(X_train, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d09de083-4b62-4b43-ade6-61ec5bb28a59",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Previsões no conjunto de teste\n",
+    "y_pred = modelo.predict(X_test)\n",
+    "\n",
+    "# Acurácia\n",
+    "acc = accuracy_score(y_test, y_pred)\n",
+    "print(\"Acurácia:\", round(acc*100, 2), \"%\")\n",
+    "\n",
+    "# Matriz de confusão\n",
+    "print(\"\\nMatriz de confusão:\")\n",
+    "print(confusion_matrix(y_test, y_pred))\n",
+    "\n",
+    "# Relatório completo\n",
+    "print(\"\\nClassification Report:\")\n",
+    "print(classification_report(y_test, y_pred))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d5ea28d9-9872-4d14-9d2d-43cd09400b8c",
+   "metadata": {},
+   "source": [
+    "## hyperparameter tuning\n",
+    "\n",
+    "O param_grid controla:\n",
+    "\n",
+    "<br>✔ complexidade da árvore\n",
+    "<br>✔ tamanho mínimo dos splits\n",
+    "<br>✔ tamanho mínimo das folhas\n",
+    "<br>✔ qual função de impureza usar"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9007b657-e957-4ff1-b6c8-6e1de1bff294",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "param_grid = {\n",
+    "    \"tree__max_depth\": [3, 5, 7, 9, 12, None],         # Limits the depth of the tree.\n",
+    "    \"tree__min_samples_split\": [2, 5, 10, 20],         # Minimum number of samples to split a node.\n",
+    "    \"tree__min_samples_leaf\": [1, 2, 4, 6],            # Minimum number of samples in a leaf node.\n",
+    "    \"tree__criterion\": [\"gini\", \"entropy\", \"log_loss\"] # Function used to measure \"impurity\" in the tree.\n",
+    "}\n",
+    "\n",
+    "grid = GridSearchCV(\n",
+    "    modelo, \n",
+    "    param_grid, \n",
+    "    cv=5, \n",
+    "    scoring=\"accuracy\",\n",
+    "    n_jobs=-1\n",
+    ")\n",
+    "\n",
+    "grid.fit(X_train, y_train)\n",
+    "\n",
+    "print(\"Melhores parâmetros:\", grid.best_params_)\n",
+    "print(\"Melhor acurácia:\", grid.best_score_)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6700d0fe-7649-4c26-9bfe-e63e97c098af",
+   "metadata": {},
+   "source": [
+    "## Tree Interpretability"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e86316b7-263d-4ce6-9c1b-2c642e3fb5b6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "best_model = grid.best_estimator_\n",
+    "tree = best_model.named_steps[\"tree\"]\n",
+    "\n",
+    "feature_names = best_model.named_steps[\"prep\"].get_feature_names_out()\n",
+    "\n",
+    "importancias = pd.DataFrame({\n",
+    "    \"feature\": feature_names,\n",
+    "    \"importance\": tree.feature_importances_\n",
+    "}).sort_values(by=\"importance\", ascending=False)\n",
+    "\n",
+    "print(importancias)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "52f62e69-b2c0-4e70-ad85-63e2c6c8c050",
+   "metadata": {},
+   "source": [
+    "### Tree visualization"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "888afd71-c71d-437f-a884-94cbaf6170a6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.figure(figsize=(20,10))\n",
+    "sktree.plot_tree(\n",
+    "    best_model.named_steps[\"tree\"],\n",
+    "    feature_names=feature_names,\n",
+    "    class_names=y.unique(),\n",
+    "    filled=True\n",
+    ")\n",
+    "plt.savefig(\"arvore_matplotlib.png\", dpi=300, bbox_inches=\"tight\")\n",
+    "plt.show()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.21"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
