@@ -53,7 +53,7 @@ A solução foi desenvolvida para apoiar análises populacionais, estudos de sa�
   _[(add link)]_
 
 - **Aplicativo Preditivo (Streamlit):**
-  _[(https://4tech-challenge.streamlit.app/)]_
+(https://4tech-challenge.streamlit.app/)
 
 
 
