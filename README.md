@@ -18,6 +18,7 @@ A solução foi desenvolvida para apoiar análises populacionais, estudos de sa�
 - Interface interativa e intuitiva
 - Entrada de dados clínicos e comportamentais do indivíduo
 - Cálculo automático do IMC
+- Painel com os resultados do usuário
 - Tabela explicativa de cada item do questionário
 - Aplicação totalmente em português
 
