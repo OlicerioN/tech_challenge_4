@@ -51,7 +51,7 @@ A solução foi desenvolvida para apoiar análises populacionais, estudos de sa�
 ## Links do Projeto
 
 - **Apresentação executiva:**  
-  _[(add link)]_
+  https://youtu.be/FnFLSe-gbsk
 
 - **Aplicativo Preditivo (Streamlit):**
 https://4tech-challenge.streamlit.app/
